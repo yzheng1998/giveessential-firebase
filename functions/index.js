@@ -1,9 +1,11 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const express = require("express");
 
 admin.initializeApp();
+const app = express();
 
-exports.getEssentialWorkers = functions.https.onRequest((req, res) => {
+app.get("/getEssentialWorkers", (req, res) => {
   admin
     .firestore()
     .collection("essentialWorkers")
@@ -17,3 +19,5 @@ exports.getEssentialWorkers = functions.https.onRequest((req, res) => {
     })
     .catch((err) => console.error(err));
 });
+
+exports.api = functions.https.onRequest(app);
