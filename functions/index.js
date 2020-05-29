@@ -7,24 +7,25 @@ admin.initializeApp();
 
 const db = admin.firestore();
 
+const geo = require("geofirex").init(admin);
+const { get } = require("geofirex");
+
 const options = {
   provider: "google",
-  apiKey: process.env.REACT_APP_GOOGLE_API_KEY,
+  apiKey: functions.config().google.key,
 };
 const geocoder = NodeGeocoder(options);
 
-app.get("/getEssentialWorkers", (req, res) => {
-  db.collection("essentialWorkers")
+app.get("/getEssentialWorkers", async (req, res) => {
+  const essentialWorkers = await db
+    .collection("essentialWorkers")
     .limit(15)
-    .get()
-    .then((data) => {
-      let workers = [];
-      data.forEach((doc) => {
-        workers.push(doc.data());
-      });
-      return res.json(workers);
-    })
-    .catch((err) => console.error(err));
+    .get();
+  let workers = [];
+  essentialWorkers.forEach((doc) => {
+    workers.push(doc.data());
+  });
+  return res.json(workers);
 });
 
 app.get("/getDonors", (req, res) => {
@@ -65,7 +66,7 @@ exports.geocodeDonors = functions.firestore
     return snap.ref.update({ coordinates: coordinates });
   });
 
-app.get("/getCoordinatesEssentialWorkers", (req, res) => {
+app.put("/updateCoordinatesEssentialWorkers", (req, res) => {
   db.collection("essentialWorkers")
     .get()
     .then((data) => {
@@ -90,12 +91,12 @@ app.get("/getCoordinatesEssentialWorkers", (req, res) => {
           return err;
         }
       });
-      return "success";
+      return res.json("success");
     })
     .catch((err) => console.log(err));
 });
 
-app.get("/getCoordinatesDonors", (req, res) => {
+app.put("/updateCoordinatesDonors", (req, res) => {
   db.collection("donors")
     .get()
     .then((data) => {
@@ -120,7 +121,65 @@ app.get("/getCoordinatesDonors", (req, res) => {
           return err;
         }
       });
-      return "success";
+      return res.json("success");
+    })
+    .catch((err) => console.log(err));
+});
+
+app.put("/updateGeoPointEssentialWorkers", (req, res) => {
+  db.collection("essentialWorkers")
+    .get()
+    .then((data) => {
+      data.forEach(async (doc) => {
+        const docData = doc.data();
+        const coords = docData.coordinates || null;
+        const geoPointData =
+          docData.position && docData.position.geohash
+            ? docData.position
+            : null;
+        try {
+          if (geoPointData === null) {
+            console.log("doc.id: ", doc.id);
+            console.log("coords: ", coords);
+            const position = geo.point(coords.latitude, coords.longitude);
+            console.log("position", position);
+            return doc.ref.update({ position });
+          }
+          return null;
+        } catch (err) {
+          return err;
+        }
+      });
+      return res.json("success");
+    })
+    .catch((err) => console.log(err));
+});
+
+app.put("/updateGeoPointDonors", (req, res) => {
+  db.collection("donors")
+    .get()
+    .then((data) => {
+      data.forEach(async (doc) => {
+        const docData = doc.data();
+        const coords = docData.coordinates || null;
+        const geoPointData =
+          docData.position && docData.position.geohash
+            ? docData.position
+            : null;
+        try {
+          if (geoPointData === null) {
+            console.log("doc.id: ", doc.id);
+            console.log("coords: ", coords);
+            const position = geo.point(coords.latitude, coords.longitude);
+            console.log("position", position);
+            return doc.ref.update({ position });
+          }
+          return null;
+        } catch (err) {
+          return err;
+        }
+      });
+      return res.json("success");
     })
     .catch((err) => console.log(err));
 });
@@ -128,13 +187,26 @@ app.get("/getCoordinatesDonors", (req, res) => {
 async function createGeocode(zip) {
   try {
     const coordinates = await geocoder.geocode(zip);
+    console.log(coordinates);
     return {
       latitude: coordinates[0].latitude,
       longitude: coordinates[0].longitude,
     };
   } catch (err) {
+    console.log("err in creating geocode", err);
     return null;
   }
 }
+
+app.get("/getNearbyEW", async (req, res) => {
+  const zip = req.query.zip;
+  const coords = await createGeocode(zip);
+  const center = geo.point(coords.latitude, coords.longitude);
+  const radius = 50;
+  const field = "position";
+  const query = geo.query("essentialWorkers").within(center, radius, field);
+  const nearby = await get(query);
+  return res.json(nearby);
+});
 
 exports.api = functions.https.onRequest(app);
