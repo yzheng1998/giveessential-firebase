@@ -1,5 +1,6 @@
 {
   "projects": {
-    "functions": "giveessential"
+    "functions": "giveessential",
+    "default": "giveessential"
   }
 }
