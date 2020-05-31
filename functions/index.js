@@ -55,66 +55,6 @@ exports.geocodeNewDonors = functions.firestore
     return snap.ref.update({ position });
   });
 
-// app.put("/ew/coords", (req, res) => {
-//   db.collection("essentialWorkers")
-//     .get()
-//     .then((data) => {
-//       data.forEach(async (doc) => {
-//         const docData = doc.data();
-//         const zip = docData.zip || null;
-//         const coordData =
-//           docData.coordinates && docData.coordinates.latitude
-//             ? docData.coordinates
-//             : null;
-//         try {
-//           if (coordData === null) {
-//             console.log("doc.id: ", doc.id);
-//             console.log("zip: ", zip);
-//             console.log("pre", docData.coordinates);
-//             const coordinates = await createGeocode(zip);
-//             console.log("post", coordinates);
-//             return doc.ref.update({ coordinates: coordinates });
-//           }
-//           return null;
-//         } catch (err) {
-//           return err;
-//         }
-//       });
-//       return res.json("success");
-//     })
-//     .catch((err) => console.log(err));
-// });
-
-// app.put("/donors/coords", (req, res) => {
-//   db.collection("donors")
-//     .get()
-//     .then((data) => {
-//       data.forEach(async (doc) => {
-//         const docData = doc.data();
-//         const zip = docData.zip || null;
-//         const coordData =
-//           docData.coordinates && docData.coordinates.latitude
-//             ? docData.coordinates
-//             : null;
-//         try {
-//           if (coordData === null) {
-//             console.log("doc.id: ", doc.id);
-//             console.log("zip: ", zip);
-//             console.log("pre", docData.coordinates);
-//             const coordinates = await createGeocode(zip);
-//             console.log("post", coordinates);
-//             return doc.ref.update({ coordinates: coordinates });
-//           }
-//           return null;
-//         } catch (err) {
-//           return err;
-//         }
-//       });
-//       return res.json("success");
-//     })
-//     .catch((err) => console.log(err));
-// });
-
 app.put("/ew/geopoint", async (req, res) => {
   const ew = await db.collection("essentialWorkers").get();
   ew.forEach(async (doc) => {
@@ -128,20 +68,6 @@ app.put("/ew/geopoint", async (req, res) => {
   });
   return res.json("success");
 });
-
-// app.put("/donors/geopoint", async (req, res) => {
-//   const ew = await db.collection("donors").get();
-//   ew.forEach(async (doc) => {
-//     const docData = doc.data();
-//     const geoPointExists = docData.position && docData.position.geohash;
-//     if (!geoPointExists) {
-//       const coords = await createGeocode(zip);
-//       const position = geo.point(coords.latitude, coords.longitude);
-//       return doc.ref.update({ position });
-//     } else return null;
-//   });
-//   return res.json("success");
-// });
 
 async function createGeocode(zip) {
   try {
